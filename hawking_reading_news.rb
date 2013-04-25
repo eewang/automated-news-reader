@@ -9,7 +9,6 @@ class Page
 
   def initialize(url)
     @url = url
-    @bylines = []
     @stories = []
   end
 
@@ -25,17 +24,11 @@ class Page
     self.front_page_stories.each do |story|
       if story.css('h6.byline').text != ""
         s = Story.new
-        if story.css('h2').text != ""
-          s.headline = story.css('h2').text.strip
-        elsif story.css('h3').text != ""
-          s.headline = story.css('h3').text.strip
-        elsif story.css('h5').text != ""
-          s.headline = story.css('h5').text.strip
-        end
-      s.link = story.css('a').attribute("href").value
-      s.byline = story.css('h6.byline').text.strip
-      s.lede_graph = story.css('p').text.strip
-      @stories << s
+        s.get_headline(story)
+        s.get_byline(story)
+        s.get_link(story)
+        s.get_lede_graph(story)
+        @stories << s
       end
     end
   end
@@ -43,6 +36,7 @@ class Page
   def read_stories
     self.create_stories
     @stories.each do |story|
+      `say -v "#{story.voice}" "Story #{@stories.index(story)+1} of #{@stories.size}"`
       story.speak_story
     end
   end
@@ -50,15 +44,50 @@ class Page
 end
 
 class Story
-  attr_accessor :headline, :byline, :lede_graph, :link
+  attr_accessor :headline, :byline, :lede_graph, :link, :voice
+
+  VOICES = [
+    "Alex",
+    "Bruce",
+    "Fred",
+    "Junior",
+    "Ralph",
+    "Agnes",
+    "Kathy",
+    "Princess",
+    "Vicki",
+    "Victoria"
+  ]
 
   def initialize
     @doc = ""
     @body_paragraphs = []
+    @voice = VOICES.shuffle[0]
   end
 
   def doc
     @doc = Nokogiri::HTML(open(@link))
+  end
+
+  def get_link(story)
+    self.link = story.css('a').attribute("href").value
+  end
+
+  def get_byline(story)
+    self.byline = story.css('h6.byline').text.strip
+  end
+
+  def get_lede_graph(story)
+    self.lede_graph = story.css('p').text.strip
+  end
+
+  def get_headline(story)
+    attrs = ['h2', 'h3', 'h5']
+    attrs.each do |headline|
+      if story.css(headline).text != ""
+        self.headline ||= story.css(headline).text.strip
+      end
+    end
   end
 
   def full_text
@@ -69,20 +98,16 @@ class Story
     @body_paragraphs
   end
 
-  def speak(method)
-    `say "#{self.send(method)}"`
-  end
-
   def speak_story
     puts "#{self.byline}"
-    `say "#{self.byline}"`
+    `say -v "#{self.voice}" "#{self.byline}"`
     puts "#{self.headline}"
-    `say "#{self.headline}"`
+    `say -v "#{self.voice}" "#{self.headline}"`
     puts "#{self.lede_graph}"
-    `say "#{self.lede_graph}"`
+    `say -v "#{self.voice}" "#{self.lede_graph}"`
     self.full_text.each do |p|
       puts "#{p}"
-      `say "#{p}"`
+      `say -v "#{self.voice}" "#{p}"`
     end
   end
 
