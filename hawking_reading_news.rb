@@ -62,7 +62,7 @@ class Story
   def initialize
     @doc = ""
     @body_paragraphs = []
-    @voice = VOICES.shuffle[0]
+    @voice = VOICES[0] # .shuffle[0]
   end
 
   def doc
@@ -113,5 +113,8 @@ class Story
 
 end
 
+# Connect with twitter
+
 news = Page.new("http://www.nytimes.com")
 news.read_stories
+
